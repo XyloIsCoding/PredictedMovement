@@ -133,12 +133,12 @@ void FSavedMove_Character_Stamina::CombineWith(const FSavedMove_Character* OldMo
 {
 	Super::CombineWith(OldMove, C, PC, OldStartLocation);
 
-	const FSavedMove_Character_Stamina* StaminaOldMove = static_cast<const FSavedMove_Character_Stamina*>(OldMove);
+	const FSavedMove_Character_Stamina* IsekaiOldMove = static_cast<const FSavedMove_Character_Stamina*>(OldMove);
 
 	if (UStaminaMovement* MoveComp = C ? Cast<UStaminaMovement>(C->GetCharacterMovement()) : nullptr)
 	{
-		MoveComp->SetStamina(StaminaOldMove->Stamina);
-		MoveComp->SetStaminaDrained(StaminaOldMove->bStaminaDrained);
+		MoveComp->SetStamina(IsekaiOldMove->Stamina);
+		MoveComp->SetStaminaDrained(IsekaiOldMove->bStaminaDrained);
 	}
 }
 

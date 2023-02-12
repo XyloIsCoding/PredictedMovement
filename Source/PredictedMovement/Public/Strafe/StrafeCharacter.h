@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Prone/ProneCharacter.h"
+#include "GameFramework/Character.h"
 #include "StrafeCharacter.generated.h"
 
 class UStrafeMovement;
@@ -20,7 +20,7 @@ class UStrafeMovement;
  * more advanced and often unnecessary.
  */
 UCLASS()
-class PREDICTEDMOVEMENT_API AStrafeCharacter : public AProneCharacter
+class PREDICTEDMOVEMENT_API AStrafeCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
