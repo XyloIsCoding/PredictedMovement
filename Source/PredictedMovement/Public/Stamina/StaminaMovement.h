@@ -6,7 +6,7 @@
 #include "Sprint/SprintMovement.h"
 #include "StaminaMovement.generated.h"
 
-struct FStaminaMoveResponseDataContainer final : FCharacterMoveResponseDataContainer
+struct PREDICTEDMOVEMENT_API FStaminaMoveResponseDataContainer : FCharacterMoveResponseDataContainer
 {
 	using Super = FCharacterMoveResponseDataContainer;
 	
