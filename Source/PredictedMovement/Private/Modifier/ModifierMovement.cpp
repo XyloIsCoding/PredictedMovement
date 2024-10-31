@@ -1,24 +1,23 @@
 ﻿// Copyright (c) 2023 Jared Taylor. All Rights Reserved.
 
 
-#include "Debuff/DebuffMovement.h"
+#include "Modifier/ModifierMovement.h"
 
-#include "Debuff/DebuffCharacter.h"
-#include "GameFramework/Character.h"
+#include "Modifier/ModifierCharacter.h"
 
-#include UE_INLINE_GENERATED_CPP_BY_NAME(DebuffMovement)
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ModifierMovement)
 
-void FDebuffMoveResponseDataContainer::ServerFillResponseData(
+void FModifierMoveResponseDataContainer::ServerFillResponseData(
 	const UCharacterMovementComponent& CharacterMovement, const FClientAdjustment& PendingAdjustment)
 {
 	Super::ServerFillResponseData(CharacterMovement, PendingAdjustment);
 
 	// Server ➜ Client
-	const UDebuffMovement* MoveComp = Cast<UDebuffMovement>(&CharacterMovement);
+	const UModifierMovement* MoveComp = Cast<UModifierMovement>(&CharacterMovement);
 	Snare = MoveComp->Snare;
 }
 
-bool FDebuffMoveResponseDataContainer::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar,
+bool FModifierMoveResponseDataContainer::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar,
 	UPackageMap* PackageMap)
 {
 	if (!Super::Serialize(CharacterMovement, Ar, PackageMap))
@@ -36,23 +35,23 @@ bool FDebuffMoveResponseDataContainer::Serialize(UCharacterMovementComponent& Ch
 	return !Ar.IsError();
 }
 
-FDebuffNetworkMoveDataContainer::FDebuffNetworkMoveDataContainer()
+FModifierNetworkMoveDataContainer::FModifierNetworkMoveDataContainer()
 {
     NewMoveData = &MoveData[0];
     PendingMoveData = &MoveData[1];
     OldMoveData = &MoveData[2];
 }
 
-void FDebuffNetworkMoveData::ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType)
+void FModifierNetworkMoveData::ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType)
 {
     Super::ClientFillNetworkMoveData(ClientMove, MoveType);
 
 	// Client ➜ Server
-	const FSavedMove_Character_Debuff& SavedMove = static_cast<const FSavedMove_Character_Debuff&>(ClientMove);
+	const FSavedMove_Character_Modifier& SavedMove = static_cast<const FSavedMove_Character_Modifier&>(ClientMove);
 	Snare = SavedMove.Snare;
 }
 
-bool FDebuffNetworkMoveData::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType)
+bool FModifierNetworkMoveData::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType)
 {
     Super::Serialize(CharacterMovement, Ar, PackageMap, MoveType);
 
@@ -63,33 +62,33 @@ bool FDebuffNetworkMoveData::Serialize(UCharacterMovementComponent& CharacterMov
     return !Ar.IsError();
 }
 
-UDebuffMovement::UDebuffMovement(const FObjectInitializer& ObjectInitializer)
+UModifierMovement::UModifierMovement(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	SetMoveResponseDataContainer(DebuffMoveResponseDataContainer);
-    SetNetworkMoveDataContainer(DebuffMoveDataContainer);
+	SetMoveResponseDataContainer(ModifierMoveResponseDataContainer);
+    SetNetworkMoveDataContainer(ModifierMoveDataContainer);
 }
 
-void UDebuffMovement::PostLoad()
+void UModifierMovement::PostLoad()
 {
 	Super::PostLoad();
 
-	ADebuffCharacter* DebuffCharacter = Cast<ADebuffCharacter>(PawnOwner);
-	Snare.Initialize(DebuffCharacter);
+	AModifierCharacter* ModifierCharacter = Cast<AModifierCharacter>(PawnOwner);
+	Snare.Initialize(ModifierCharacter);
 }
 
-void UDebuffMovement::SetUpdatedComponent(USceneComponent* NewUpdatedComponent)
+void UModifierMovement::SetUpdatedComponent(USceneComponent* NewUpdatedComponent)
 {
 	Super::SetUpdatedComponent(NewUpdatedComponent);
 
-	ADebuffCharacter* DebuffCharacter = Cast<ADebuffCharacter>(PawnOwner);
-	Snare.Initialize(DebuffCharacter);
+	AModifierCharacter* ModifierCharacter = Cast<AModifierCharacter>(PawnOwner);
+	Snare.Initialize(ModifierCharacter);
 }
 
-bool FSavedMove_Character_Debuff::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter,
+bool FSavedMove_Character_Modifier::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter,
 	float MaxDelta) const
 {
-	const TSharedPtr<FSavedMove_Character_Debuff>& SavedMove = StaticCastSharedPtr<FSavedMove_Character_Debuff>(NewMove);
+	const TSharedPtr<FSavedMove_Character_Modifier>& SavedMove = StaticCastSharedPtr<FSavedMove_Character_Modifier>(NewMove);
 
 	if (Snare != SavedMove->Snare)
 	{
@@ -99,38 +98,38 @@ bool FSavedMove_Character_Debuff::CanCombineWith(const FSavedMovePtr& NewMove, A
 	return Super::CanCombineWith(NewMove, InCharacter, MaxDelta);
 }
 
-void FSavedMove_Character_Debuff::CombineWith(const FSavedMove_Character* OldMove, ACharacter* C,
+void FSavedMove_Character_Modifier::CombineWith(const FSavedMove_Character* OldMove, ACharacter* C,
 	APlayerController* PC, const FVector& OldStartLocation)
 {
 	Super::CombineWith(OldMove, C, PC, OldStartLocation);
 
-	const FSavedMove_Character_Debuff* SavedOldMove = static_cast<const FSavedMove_Character_Debuff*>(OldMove);
+	const FSavedMove_Character_Modifier* SavedOldMove = static_cast<const FSavedMove_Character_Modifier*>(OldMove);
 
-	if (UDebuffMovement* MoveComp = C ? Cast<UDebuffMovement>(C->GetCharacterMovement()) : nullptr)
+	if (UModifierMovement* MoveComp = C ? Cast<UModifierMovement>(C->GetCharacterMovement()) : nullptr)
 	{
 		MoveComp->Snare = SavedOldMove->Snare;
 	}
 }
 
-void FSavedMove_Character_Debuff::Clear()
+void FSavedMove_Character_Modifier::Clear()
 {
 	Super::Clear();
 	Snare = {};
 }
 
-void FSavedMove_Character_Debuff::SetInitialPosition(ACharacter* C)
+void FSavedMove_Character_Modifier::SetInitialPosition(ACharacter* C)
 {
 	Super::SetInitialPosition(C);
 
-	if (const UDebuffMovement* MoveComp = C ? Cast<UDebuffMovement>(C->GetCharacterMovement()) : nullptr)
+	if (const UModifierMovement* MoveComp = C ? Cast<UModifierMovement>(C->GetCharacterMovement()) : nullptr)
 	{
 		Snare = MoveComp->Snare;
 	}
 }
 
-float UDebuffMovement::GetMaxSpeedScalar() const
+float UModifierMovement::GetMaxSpeedScalar() const
 {
-	switch (Snare.GetDebuffLevel<ESnare>())
+	switch (Snare.GetModifierLevel<ESnare>())
 	{
 	case ESnare::Snare_25: return SnaredScalar_25;
 	case ESnare::Snare_50: return SnaredScalar_50;
@@ -139,17 +138,17 @@ float UDebuffMovement::GetMaxSpeedScalar() const
 	}
 }
 
-float UDebuffMovement::GetRootMotionTranslationScalar() const
+float UModifierMovement::GetRootMotionTranslationScalar() const
 {
 	return bSnareAffectsRootMotion ? GetMaxSpeedScalar() : 1.f;
 }
 
-float UDebuffMovement::GetMaxSpeed() const
+float UModifierMovement::GetMaxSpeed() const
 {
 	return Super::GetMaxSpeed() * GetMaxSpeedScalar();
 }
 
-void UDebuffMovement::TickCharacterPose(float DeltaTime)
+void UModifierMovement::TickCharacterPose(float DeltaTime)
 {
 	/*
 	 * Epic made ACharacter::GetAnimRootMotionTranslationScale() non-virtual which was silly,
@@ -208,7 +207,7 @@ void UDebuffMovement::TickCharacterPose(float DeltaTime)
 	CharacterMesh->bIsAutonomousTickPose = false;
 }
 
-void UDebuffMovement::OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData, float TimeStamp,
+void UModifierMovement::OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData, float TimeStamp,
 	FVector NewLocation, FVector NewVelocity, UPrimitiveComponent* NewBase, FName NewBaseBoneName, bool bHasBase,
 	bool bBaseRelativePosition, uint8 ServerMovementMode
 #if UE_5_03_OR_LATER
@@ -218,13 +217,13 @@ void UDebuffMovement::OnClientCorrectionReceived(FNetworkPredictionData_Client_C
 #endif
 {
 	// ClientHandleMoveResponse() ➜ ClientAdjustPosition_Implementation() ➜ OnClientCorrectionReceived()
-	const FDebuffMoveResponseDataContainer& DebuffMoveResponse = static_cast<const FDebuffMoveResponseDataContainer&>(GetMoveResponseDataContainer());
+	const FModifierMoveResponseDataContainer& ModifierMoveResponse = static_cast<const FModifierMoveResponseDataContainer&>(GetMoveResponseDataContainer());
 
-	if (Snare != DebuffMoveResponse.Snare)
+	if (Snare != ModifierMoveResponse.Snare)
 	{
 		// Snare has changed, apply correction
-		Snare = DebuffMoveResponse.Snare;
-		Snare.OnDebuffsChanged();
+		Snare = ModifierMoveResponse.Snare;
+		Snare.OnModifiersChanged();
 	}
 
 	Super::OnClientCorrectionReceived(ClientData, TimeStamp, NewLocation, NewVelocity, NewBase, NewBaseBoneName,
@@ -236,17 +235,17 @@ void UDebuffMovement::OnClientCorrectionReceived(FNetworkPredictionData_Client_C
 #endif
 }
 
-bool UDebuffMovement::ServerCheckClientError(float ClientTimeStamp, float DeltaTime, const FVector& Accel, const FVector& ClientWorldLocation, const FVector& RelativeClientLocation, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode)
+bool UModifierMovement::ServerCheckClientError(float ClientTimeStamp, float DeltaTime, const FVector& Accel, const FVector& ClientWorldLocation, const FVector& RelativeClientLocation, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode)
 {
     if (Super::ServerCheckClientError(ClientTimeStamp, DeltaTime, Accel, ClientWorldLocation, RelativeClientLocation, ClientMovementBase, ClientBaseBoneName, ClientMovementMode))
     {
         return true;
     }
 
-	// Trigger client correction if debuffs have different DebuffLevel or Debuffs
-	// De-syncs can happen when we set the Debuff directly in Gameplay code (i.e. GAS)
+	// Trigger client correction if modifiers have different ModifierLevel or Modifiers Array
+	// De-syncs can happen when we set the Modifier directly in Gameplay code (i.e. GAS)
 	
-    const FDebuffNetworkMoveData* CurrentMoveData = static_cast<const FDebuffNetworkMoveData*>(GetCurrentNetworkMoveData());
+    const FModifierNetworkMoveData* CurrentMoveData = static_cast<const FModifierNetworkMoveData*>(GetCurrentNetworkMoveData());
     if (CurrentMoveData->Snare != Snare)
 	{
 		return true;
@@ -255,18 +254,18 @@ bool UDebuffMovement::ServerCheckClientError(float ClientTimeStamp, float DeltaT
     return false;
 }
 
-FNetworkPredictionData_Client* UDebuffMovement::GetPredictionData_Client() const
+FNetworkPredictionData_Client* UModifierMovement::GetPredictionData_Client() const
 {
 	if (ClientPredictionData == nullptr)
 	{
-		UDebuffMovement* MutableThis = const_cast<UDebuffMovement*>(this);
-		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_Character_Debuff(*this);
+		UModifierMovement* MutableThis = const_cast<UModifierMovement*>(this);
+		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_Character_Modifier(*this);
 	}
 
 	return ClientPredictionData;
 }
 
-FSavedMovePtr FNetworkPredictionData_Client_Character_Debuff::AllocateNewMove()
+FSavedMovePtr FNetworkPredictionData_Client_Character_Modifier::AllocateNewMove()
 {
-	return MakeShared<FSavedMove_Character_Debuff>();
+	return MakeShared<FSavedMove_Character_Modifier>();
 }

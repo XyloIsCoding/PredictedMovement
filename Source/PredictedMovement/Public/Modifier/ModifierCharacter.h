@@ -4,43 +4,43 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "DebuffCharacter.generated.h"
+#include "ModifierCharacter.generated.h"
 
 enum class ESnare : uint8;
 struct FGameplayTag;
-class UDebuffMovement;
+class UModifierMovement;
 
 UCLASS()
-class PREDICTEDMOVEMENT_API ADebuffCharacter : public ACharacter
+class PREDICTEDMOVEMENT_API AModifierCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
 	/** Movement component used for movement logic in various movement modes (walking, falling, etc), containing relevant settings and functions to control movement. */
 	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	TObjectPtr<UDebuffMovement> DebuffMovement;
+	TObjectPtr<UModifierMovement> ModifierMovement;
 	
 protected:
-	FORCEINLINE UDebuffMovement* GetDebuffCharacterMovement() const { return DebuffMovement; }
+	FORCEINLINE UModifierMovement* GetModifierCharacterMovement() const { return ModifierMovement; }
 
 public:
-	ADebuffCharacter(const FObjectInitializer& FObjectInitializer);
+	AModifierCharacter(const FObjectInitializer& FObjectInitializer);
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
-	virtual void OnDebuffed(const FGameplayTag& DebuffType, uint8 DebuffLevel, uint8 PrevDebuffLevel);
-	virtual void OnDebuffAdded(const FGameplayTag& DebuffType, uint8 DebuffLevel);
-	virtual void OnDebuffRemoved(const FGameplayTag& DebuffType, uint8 DebuffLevel);
+	virtual void OnModifierChanged(const FGameplayTag& ModifierType, uint8 ModifierLevel, uint8 PrevModifierLevel);
+	virtual void OnModifierAdded(const FGameplayTag& ModifierType, uint8 ModifierLevel);
+	virtual void OnModifierRemoved(const FGameplayTag& ModifierType, uint8 ModifierLevel);
 
-	UFUNCTION(BlueprintImplementableEvent, Category=Character, meta=(DisplayName="On Debuff Added"))
-	void K2_OnDebuffAdded(const FGameplayTag& DebuffType, uint8 DebuffLevel, uint8 PrevDebuffLevel);
+	UFUNCTION(BlueprintImplementableEvent, Category=Character, meta=(DisplayName="On Modifier Added"))
+	void K2_OnModifierAdded(const FGameplayTag& ModifierType, uint8 ModifierLevel, uint8 PrevModifierLevel);
 
-	UFUNCTION(BlueprintImplementableEvent, Category=Character, meta=(DisplayName="On Debuff Removed"))
-	void K2_OnDebuffRemoved(const FGameplayTag& DebuffType, uint8 DebuffLevel, uint8 PrevDebuffLevel);
+	UFUNCTION(BlueprintImplementableEvent, Category=Character, meta=(DisplayName="On Modifier Removed"))
+	void K2_OnModifierRemoved(const FGameplayTag& ModifierType, uint8 ModifierLevel, uint8 PrevModifierLevel);
 
 protected:
-	/* Snare (Non-Generic) Implementation -- Implement per-debuff type */
+	/* Snare (Non-Generic) Implementation -- Implement per-modifier type */
 	
 	UPROPERTY(ReplicatedUsing=OnRep_SimulatedSnare)
 	uint8 SimulatedSnare;

@@ -5,10 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "System/PredictedMovementVersioning.h"
-#include "DebuffTypes.h"
-#include "DebuffMovement.generated.h"
+#include "ModifierTypes.h"
+#include "ModifierMovement.generated.h"
 
-// @TODO example of a debuff that can stack
+/**
+ * Snare is a debuff modifier that reduces movement speed
+ * By default, up to 3 snares can be added, and the highest level snare will be applied
+ * UModifierMovement::Snare contains properties to change stacking behavior and max number of snares
+ */
 UENUM(BlueprintType)
 enum class ESnare : uint8
 {
@@ -18,55 +22,56 @@ enum class ESnare : uint8
 	Snare_75		UMETA(DisplayName = "Snare 75% (Reduction)", Tooltip = "75% Reduction in Movement Speed"),
 };
 
-struct PREDICTEDMOVEMENT_API FDebuffMoveResponseDataContainer : FCharacterMoveResponseDataContainer
+struct PREDICTEDMOVEMENT_API FModifierMoveResponseDataContainer : FCharacterMoveResponseDataContainer
 {  // Server ➜ Client
 	using Super = FCharacterMoveResponseDataContainer;
 
-	FDebuffData Snare;
+	FModifierData Snare;
 	
 	virtual void ServerFillResponseData(const UCharacterMovementComponent& CharacterMovement, const FClientAdjustment& PendingAdjustment) override;
 	virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap) override;
 };
 
-struct PREDICTEDMOVEMENT_API FDebuffNetworkMoveData : public FCharacterNetworkMoveData
+struct PREDICTEDMOVEMENT_API FModifierNetworkMoveData : public FCharacterNetworkMoveData
 {  // Client ➜ Server
 public:
     typedef FCharacterNetworkMoveData Super;
  
-    FDebuffNetworkMoveData()
+    FModifierNetworkMoveData()
     {
     	
     }
 
-	FDebuffData Snare;
+	FModifierData Snare;
  
     virtual void ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType) override;
     virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType) override;
 };
  
-struct PREDICTEDMOVEMENT_API FDebuffNetworkMoveDataContainer : public FCharacterNetworkMoveDataContainer
+struct PREDICTEDMOVEMENT_API FModifierNetworkMoveDataContainer : public FCharacterNetworkMoveDataContainer
 {  // Client ➜ Server
 public:
     typedef FCharacterNetworkMoveDataContainer Super;
  
-    FDebuffNetworkMoveDataContainer();
+    FModifierNetworkMoveDataContainer();
  
 private:
-    FDebuffNetworkMoveData MoveData[3];
+    FModifierNetworkMoveData MoveData[3];
 };
 
 /**
- * @TODO
- * This is using snares as example, but you can use it for any buff or debuff that has stacking application
- * Snare is used as an example of a debuff, you can duplicate for your own debuffs and buffs
+ * Supports stackable modifiers that can affect movement
+ * 
+ * Snare is used as an example of a debuff modifier, you can duplicate
+ * the Snare implementation for your own modifiers
  */
 UCLASS()
-class PREDICTEDMOVEMENT_API UDebuffMovement : public UCharacterMovementComponent
+class PREDICTEDMOVEMENT_API UModifierMovement : public UCharacterMovementComponent
 {
 	GENERATED_BODY()
 
 public:
-	UDebuffMovement(const FObjectInitializer& ObjectInitializer);
+	UModifierMovement(const FObjectInitializer& ObjectInitializer);
 
 	virtual void PostLoad() override;
 	virtual void SetUpdatedComponent(USceneComponent* NewUpdatedComponent) override;
@@ -85,20 +90,20 @@ public:
 	bool bSnareAffectsRootMotion = true;
 	
 public:
-	/** Example implementation of a debuff that can stack */
+	/** Example implementation of a debuff modifier that can stack */
 	UPROPERTY(Category="Character Movement: Walking", EditAnywhere, BlueprintReadWrite)
-	FDebuffData Snare;
+	FModifierData Snare;
 
 	UFUNCTION(BlueprintCallable, Category="Character Movement: Walking")
 	ESnare GetSnareLevel() const
 	{
-		return Snare.GetDebuffLevel<ESnare>();
+		return Snare.GetModifierLevel<ESnare>();
 	}
 
 	UFUNCTION(BlueprintPure, Category="Character Movement: Walking")
 	bool IsSnared() const
 	{
-		return Snare.IsDebuffed();
+		return Snare.HasModifier();
 	}
 
 	virtual float GetMaxSpeedScalar() const;
@@ -107,9 +112,9 @@ public:
 	virtual void TickCharacterPose(float DeltaTime) override;
 	
 private:
-	FDebuffMoveResponseDataContainer DebuffMoveResponseDataContainer;
+	FModifierMoveResponseDataContainer ModifierMoveResponseDataContainer;
 
-	FDebuffNetworkMoveDataContainer DebuffMoveDataContainer;
+	FModifierNetworkMoveDataContainer ModifierMoveDataContainer;
 	
 public:
 	virtual void OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData, float TimeStamp,
@@ -129,19 +134,19 @@ public:
 	virtual class FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 };
 
-class PREDICTEDMOVEMENT_API FSavedMove_Character_Debuff : public FSavedMove_Character
+class PREDICTEDMOVEMENT_API FSavedMove_Character_Modifier : public FSavedMove_Character
 {
 	using Super = FSavedMove_Character;
 	
 public:
-	FSavedMove_Character_Debuff()
+	FSavedMove_Character_Modifier()
 	{
 	}
 
-	virtual ~FSavedMove_Character_Debuff() override
+	virtual ~FSavedMove_Character_Modifier() override
 	{}
 
-	FDebuffData Snare;
+	FModifierData Snare;
 
 	virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
 	virtual void CombineWith(const FSavedMove_Character* OldMove, ACharacter* InCharacter, APlayerController* PC, const FVector& OldStartLocation) override;
@@ -149,12 +154,12 @@ public:
 	virtual void SetInitialPosition(ACharacter* C) override;
 };
 
-class PREDICTEDMOVEMENT_API FNetworkPredictionData_Client_Character_Debuff : public FNetworkPredictionData_Client_Character
+class PREDICTEDMOVEMENT_API FNetworkPredictionData_Client_Character_Modifier : public FNetworkPredictionData_Client_Character
 {
 	using Super = FNetworkPredictionData_Client_Character;
 
 public:
-	FNetworkPredictionData_Client_Character_Debuff(const UCharacterMovementComponent& ClientMovement)
+	FNetworkPredictionData_Client_Character_Modifier(const UCharacterMovementComponent& ClientMovement)
 	: Super(ClientMovement)
 	{}
 
