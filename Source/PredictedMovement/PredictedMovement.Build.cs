@@ -20,6 +20,7 @@ public class PredictedMovement : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"GameplayTags",
 			}
 			);
 	}

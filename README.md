@@ -140,6 +140,10 @@ more advanced and often unnecessary.
 
 # Changelog
 
+### 1.6.0
+* Added Predicted Debuffs (and Buffs)
+	* Useful for snares or speed boosts, or any other movement affecting abilities
+
 ### 1.5.2
 * Version number follows Unreal format 1.0.5.2 > 1.5.2
 * Added System/PredictedMovementVersioning.h for improved pre-processor support
